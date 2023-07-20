@@ -5,27 +5,30 @@ import hello.advanced.trace.TraceStatus;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class FieldLogTrace implements LogTrace {
+public class ThreadLocalLogTrace implements LogTrace {
 
     private static final String START_PREFIX = "-->";
     private static final String COMPLETE_PREFIX = "<--";
     private static final String EX_PREFIX = "<X-";
 
-    private TraceId traceIdHolder; // traceId 동기화, 동시성 이슈 발생
+    //    private TraceId traceIdHolder; // traceId 동기화, 동시성 이슈 발생
+    private ThreadLocal<TraceId> traceIdHolder = new ThreadLocal<>();
 
     @Override
     public TraceStatus begin(String message) {
         syncTraceId();
+        TraceId traceId = traceIdHolder.get();
         Long startTimeMs = System.currentTimeMillis();
-        log.info("[{}] {}{}", traceIdHolder.getId(), addSpace(START_PREFIX, traceIdHolder.getLevel()), message);
-        return new TraceStatus(traceIdHolder, startTimeMs, message);
+        log.info("[{}] {}{}", traceId.getId(), addSpace(START_PREFIX, traceId.getLevel()), message);
+        return new TraceStatus(traceId, startTimeMs, message);
     }
 
-    private void  syncTraceId() {
-        if (traceIdHolder == null) {
-            traceIdHolder = new TraceId();
+    private void syncTraceId() {
+        TraceId traceId = traceIdHolder.get();
+        if (traceId == null) {
+            traceIdHolder.set(new TraceId());
         } else {
-            traceIdHolder = traceIdHolder.createNextId();
+            traceIdHolder.set(traceId.createNextId());
         }
     }
 
@@ -53,10 +56,11 @@ public class FieldLogTrace implements LogTrace {
     }
 
     private void releaseTraceId() {
-        if (traceIdHolder.isFirstLevel()) {
-            traceIdHolder = null;
+        TraceId traceId = traceIdHolder.get();
+        if (traceId.isFirstLevel()) {
+            traceIdHolder.remove(); // destroy
         } else {
-            traceIdHolder = traceIdHolder.createPreviousId();
+            traceIdHolder.set(traceId.createPreviousId());
         }
     }
 
