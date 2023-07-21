@@ -13,5 +13,6 @@ public class LogTraceConfig {
     public LogTrace logTrace() {
 //        return new FieldLogTrace();
         return new ThreadLocalLogTrace();
+
     }
 }
