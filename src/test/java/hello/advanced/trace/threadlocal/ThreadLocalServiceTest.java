@@ -13,13 +13,9 @@ public class ThreadLocalServiceTest {
     void field() {
         log.info("main start");
 
-        Runnable userA = () -> {
-            threadLocalService.logic("userA");
-        };
+        Runnable userA = () -> threadLocalService.logic("userA");
 
-        Runnable userB = () -> {
-            threadLocalService.logic("userB");
-        };
+        Runnable userB = () -> threadLocalService.logic("userB");
 
         Thread threadA = new Thread(userA);
         threadA.setName("thread-A");
